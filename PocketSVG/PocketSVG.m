@@ -20,7 +20,6 @@ NSString* const commandCharString	= @"CcMmLlHhVvZzqQaAsS";
 unichar const invalidCommand		= '*';
 
 
-
 @interface Token : NSObject {
 	@private
 	unichar			command;
@@ -68,7 +67,9 @@ unichar const invalidCommand		= '*';
 @interface PocketSVG ()
 
 - (NSMutableArray *)parsePath:(NSString *)attr;
+#if TARGET_OS_IPHONE
 - (UIBezierPath *) generateBezier:(NSArray *)tokens;
+#endif
 
 - (void)reset;
 - (void)appendSVGMCommand:(Token *)token;
@@ -208,7 +209,7 @@ unichar const invalidCommand		= '*';
 	unichar command = [stringToken characterAtIndex:0];
 	while (index < [stringTokens count]) {
 		if (![commandSet characterIsMember:command]) {
-			NSLog(@"*** PocketSVG Error: Path string parse error: found float where expecting command at token %d in path %s.", 
+			NSLog(@"*** PocketSVG Error: Path string parse error: found float where expecting command at token %ld in path %s.", 
 					index, [attr cStringUsingEncoding:NSUTF8StringEncoding]);
 			return nil;
 		}
@@ -221,7 +222,7 @@ unichar const invalidCommand		= '*';
 			NSScanner *floatScanner = [NSScanner scannerWithString:stringToken];
 			float value;
 			if (![floatScanner scanFloat:&value]) {
-				NSLog(@"*** PocketSVG Error: Path string parse error: expected float or command at token %d (but found %s) in path %s.", 
+				NSLog(@"*** PocketSVG Error: Path string parse error: expected float or command at token %ld (but found %s) in path %s.", 
 					  index, [stringToken cStringUsingEncoding:NSUTF8StringEncoding], [attr cStringUsingEncoding:NSUTF8StringEncoding]);
 				return nil;
 			}
@@ -237,9 +238,10 @@ unichar const invalidCommand		= '*';
 	return tokens;
 }
 
-- (UIBezierPath *)generateBezier:(NSArray *)inTokens
+
+- (BezierPath *)generateBezier:(NSArray *)inTokens
 {
-	bezier = [[UIBezierPath alloc] init];
+	bezier = [[BezierPath alloc] init];
 	[self reset];
 	for (Token *thisToken in inTokens) {
 		unichar command = [thisToken command];
@@ -300,7 +302,7 @@ unichar const invalidCommand		= '*';
 			first = NO;
 		}
 		else {
-#ifdef TARGET_OS_IPHONE
+#if TARGET_OS_IPHONE
 			[bezier addLineToPoint:lastPoint];
 #else
 			[bezier lineToPoint:NSPointFromCGPoint(lastPoint)];
@@ -346,7 +348,7 @@ unichar const invalidCommand		= '*';
 				return;
 		}
 		lastPoint = CGPointMake(x, y);
-#ifdef TARGET_OS_IPHONE
+#if TARGET_OS_IPHONE
 		[bezier addLineToPoint:lastPoint];
 #else
 		[bezier lineToPoint:NSPointFromCGPoint(lastPoint)];
@@ -366,14 +368,14 @@ unichar const invalidCommand		= '*';
 		CGFloat x  = [token parameter:index++] + ([token command] == 'c' ? lastPoint.x : 0);
 		CGFloat y  = [token parameter:index++] + ([token command] == 'c' ? lastPoint.y : 0);
 		lastPoint = CGPointMake(x, y);
-#ifdef TARGET_OS_IPHONE
+#if TARGET_OS_IPHONE
 		[bezier addCurveToPoint:lastPoint 
 				  controlPoint1:CGPointMake(x1,y1) 
 				  controlPoint2:CGPointMake(x2, y2)];
 #else
 		[bezier curveToPoint:NSPointFromCGPoint(lastPoint)
 			   controlPoint1:NSPointFromCGPoint(CGPointMake(x1,y1))
-			   controlPoint2:NSPointFromCGPoint(CGPointMake(x2, y2)];
+			   controlPoint2:NSPointFromCGPoint(CGPointMake(x2, y2))];
 #endif
         lastControlPoint = CGPointMake(x2, y2);
 		validLastControlPoint = YES;
@@ -397,14 +399,14 @@ unichar const invalidCommand		= '*';
 		CGFloat x  = [token parameter:index++] + ([token command] == 's' ? lastPoint.x : 0);
 		CGFloat y  = [token parameter:index++] + ([token command] == 's' ? lastPoint.y : 0);
 		lastPoint = CGPointMake(x, y);
-#ifdef TARGET_OS_IPHONE
+#if TARGET_OS_IPHONE
 		[bezier addCurveToPoint:lastPoint 
 				  controlPoint1:CGPointMake(x1,y1)
 				  controlPoint2:CGPointMake(x2, y2)];
 #else
 		[bezier curveToPoint:NSPointFromCGPoint(lastPoint)
 			   controlPoint1:NSPointFromCGPoint(CGPointMake(x1,y1)) 
-			   controlPoint2:NSPointFromCGPoint(CGPointMake(x2, y2)];
+			   controlPoint2:NSPointFromCGPoint(CGPointMake(x2, y2))];
 #endif
 		lastControlPoint = CGPointMake(x2, y2);
 		validLastControlPoint = YES;
