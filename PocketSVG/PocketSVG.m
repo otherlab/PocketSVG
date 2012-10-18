@@ -80,32 +80,45 @@ unichar const invalidCommand		= '*';
 @end
 
 
+const NSString *kUTTypeSVGImage = @"public.svg-image";
+
 @implementation PocketSVG
 
 @synthesize bezier;
 
 
-- (id)initFromSVGFileNamed:(NSString *)nameOfSVG{
-    return [self initFromSVGPathNodeDAttr:[self parseSVGNamed:nameOfSVG]];
++ (BOOL)canInitWithPasteboard:(NSPasteboard*)pb
+{
+    NSDictionary *options = @{
+        NSPasteboardURLReadingFileURLsOnlyKey:@(true),
+        NSPasteboardURLReadingContentsConformToTypesKey: @[kUTTypeSVGImage] };
+    if( [pb canReadObjectForClasses:@[[NSURL class]] options:options] )
+    {
+        return TRUE;
+    }
+    return FALSE;
+}
+
+- (id)initWithURL:(NSURL *)fileURL
+{
+    return [self initFromSVGPathNodeDAttr:[self parseSVG:fileURL]];
 }
 
 /********
  Returns the content of the SVG's d attribute as an NSString
 */
--(NSString *)parseSVGNamed:(NSString *)nameOfSVG{
-    
-    NSString *pathOfSVGFile = [[NSBundle mainBundle] pathForResource:nameOfSVG ofType:@"svg"];
-    
-    if(pathOfSVGFile == nil){
-        NSLog(@"*** PocketSVG Error: No SVG file named \"%@\".", nameOfSVG);
+-(NSString *)parseSVG:(NSURL *)fileURL
+{
+    if(fileURL == nil){
+        NSLog(@"*** PocketSVG Error: No SVG file named \"%@\".", fileURL);
         return nil;
     }
     
     NSError *error = nil;
-    NSString *mySVGString = [[NSString alloc] initWithContentsOfFile:pathOfSVGFile encoding:NSStringEncodingConversionExternalRepresentation error:&error];
+    NSString *mySVGString = [[NSString alloc] initWithContentsOfURL:fileURL encoding:NSStringEncodingConversionExternalRepresentation error:&error];
     
     if(error != nil){
-        NSLog(@"*** PocketSVG Error: Couldn't read contents of SVG file named %@:", nameOfSVG);
+        NSLog(@"*** PocketSVG Error: Couldn't read contents of SVG file named %@:", fileURL);
         NSLog(@"%@", error);
         return nil;
     }
@@ -275,6 +288,14 @@ unichar const invalidCommand		= '*';
 				break;
 		}
 	}
+    
+    // scale from pixels at 72dpi to mm
+    NSAffineTransform *xform = [NSAffineTransform transform];
+    [xform scaleBy:1/72.0 * 25.4];
+//    [xform rotateByDegrees:180];
+//    [xform translateXBy:0 yBy:-[bezier bounds].size.height/2];
+    [bezier transformUsingAffineTransform:xform];
+    
 	return bezier;
 }
 

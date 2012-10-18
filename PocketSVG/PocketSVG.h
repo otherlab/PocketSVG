@@ -17,7 +17,7 @@
 #define BezierPath NSBezierPath
 #endif
 
-
+extern const NSString *kUTTypeSVGImage;
 
 @interface PocketSVG : NSObject {
 	@private
@@ -34,6 +34,8 @@
 
 @property(nonatomic, readonly) BezierPath *bezier;
 
-- (id)initFromSVGFileNamed:(NSString *)nameOfSVG;
+- (id)initWithURL:(NSURL *)fileURL;
+
++ (BOOL)canInitWithPasteboard:(NSPasteboard*)pb;
 
 @end
